@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_template/injection/injector.dart';
-import 'package:flutter_template/presentation/feature/profile/profile_presenter.dart';
+import 'package:flutter_template/presentation/feature/profile/profile_view_model.dart';
 import 'package:flutter_template/presentation/feature/profile/profile_state.dart';
 import 'package:flutter_template/presentation/resources/resources.dart';
+
+/// Profile provider
+AutoDisposeStateNotifierProvider<ProfileViewModel, ProfileState> _provider =
+    StateNotifierProvider.autoDispose<ProfileViewModel, ProfileState>(
+        (ref) => injector.get<ProfileViewModel>());
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -13,12 +18,10 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _profilePresenter = injector.get<ProfilePresenter>();
-
   @override
   void initState() {
     super.initState();
-    _profilePresenter.load();
+    context.read(_provider.notifier).load();
   }
 
   @override
@@ -27,10 +30,11 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: context.colors.background,
       appBar: AppBar(
         backgroundColor: context.colors.accent,
-        title: BlocBuilder<ProfilePresenter, ProfileState>(
-          bloc: _profilePresenter,
-          builder: (context, state) {
-            return Text(state.isLoading ? 'Profile' : 'Profile: ' + state.name);
+        title: Consumer(
+          builder: (context, watch, child) {
+            return Text(watch(_provider).isLoading
+                ? 'Profile'
+                : 'Profile: ' + watch(_provider).name);
           },
         ),
       ),
@@ -40,15 +44,15 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Center(
             child: Column(
               children: [
-                BlocBuilder<ProfilePresenter, ProfileState>(
-                    bloc: _profilePresenter,
-                    builder: (context, state) {
-                      if (state.isLoading) {
-                        return CircularProgressIndicator();
-                      } else {
-                        return Text('Hi ${state.name}!');
-                      }
-                    })
+                Consumer(
+                  builder: (context, watch, child) {
+                    if (watch(_provider).isLoading) {
+                      return CircularProgressIndicator();
+                    } else {
+                      return Text('Hi ${watch(_provider).name}!');
+                    }
+                  },
+                )
               ],
             ),
           ),
